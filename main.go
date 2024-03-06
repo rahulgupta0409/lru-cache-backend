@@ -201,6 +201,12 @@ func respondWithJson(w http.ResponseWriter, code int, payload interface{}) inter
 
 func HandlerSet(c *LRUCache) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+		if r.Method == "OPTIONS" {
+			w.WriteHeader(http.StatusOK)
+			return
+		}
 		defer r.Body.Close()
 		var data struct {
 			Key   interface{} `json:"key"`
@@ -219,6 +225,7 @@ func HandlerSet(c *LRUCache) http.HandlerFunc {
 
 func HandlerGet(c *LRUCache) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Access-Control-Allow-Origin", "*")
 		key := r.URL.Query().Get("key")
 
 		if key == "" {
@@ -231,13 +238,13 @@ func HandlerGet(c *LRUCache) http.HandlerFunc {
 }
 
 func main() {
+	router := mux.NewRouter()
 	config := Configuration()
 	config.SetDefaultTTL(5 * time.Second)
 	config.SetMaxSize(1024)
 	cache := NewLRUCache(config)
-	router := mux.NewRouter()
 
-	router.HandleFunc("/getValue", HandlerGet(cache)).Methods("GET")
+	router.HandleFunc("/getValue", HandlerGet(cache)).Methods("GET", "OPTIONS")
 	router.HandleFunc("/setValue", HandlerSet(cache)).Methods("POST")
 	http.Handle("/", router)
 
